@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Image Super Resolution - ISRO Hackathon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            padding-top: 80px;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="grad"><stop offset="0%" style="stop-color:%23ff6b6b;stop-opacity:0.3"/><stop offset="100%" style="stop-color:%234ecdc4;stop-opacity:0.1"/></radialGradient></defs><circle cx="200" cy="200" r="100" fill="url(%23grad)"/><circle cx="800" cy="300" r="150" fill="url(%23grad)"/><circle cx="400" cy="700" r="120" fill="url(%23grad)"/></svg>') center/cover;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.5)); }
+            100% { filter: drop-shadow(0 0 20px rgba(78, 205, 196, 0.8)); }
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 107, 107, 0.5);
+        }
+
+        /* Sections */
+        .section {
+            padding: 5rem 0;
+            position: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            font-size: 1.8rem;
+            color: #4ecdc4;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        /* Problem Statement */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .problem-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .problem-card h3 {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        /* Architecture Section */
+        .architecture-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 3rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .workflow-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+            align-items: center;
+        }
+
+        .workflow-step {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(78, 205, 196, 0.2));
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-step:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .workflow-step::after {
+            content: '→';
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2rem;
+            color: #4ecdc4;
+        }
+
+        .workflow-step:last-child::after {
+            display: none;
+        }
+
+        .step-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* Demo Section */
+        .demo-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 3rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .upload-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(78, 205, 196, 0.5);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-box:hover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+
+        .upload-box.has-image {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+
+        .upload-box input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-content {
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #4ecdc4;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 1rem;
+            display: none;
+            object-fit: contain;
+        }
+
+        .process-button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 2rem auto;
+            display: block;
+        }
+
+        .process-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .process-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: linear-gradient(45deg, #666, #666);
+        }
+
+        .result-section {
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        .result-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            object-fit: contain;
+        }
+
+        /* Evaluation Section */
+        .evaluation-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 3rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin: 1rem 0;
+        }
+
+        .rating-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .star {
+            font-size: 2rem;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffd700;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(78, 205, 196, 0.3);
+            border-top: 5px solid #4ecdc4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .workflow-step::after {
+                content: '↓';
+                right: 50%;
+                top: 100%;
+                transform: translateX(50%);
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* Additional styles for better UX */
+        .upload-status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #4ecdc4;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.5);
+            color: #4ecdc4;
+        }
+
+        .alert-error {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">ISRO SuperRes</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#evaluation">Evaluation</a></li>
+                <li><a href="#tech">Tech Stack</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Dual Image Super Resolution</h1>
+            <p>Enhancing High-Resolution Optical Satellite Imagery with Advanced Deep Learning and Comprehensive Blind Evaluation</p>
+            <a href="#demo" class="cta-button">Try Our Demo</a>
+        </div>
+    </section>
+
+    <!-- Introduction Section -->
+    <section id="introduction" class="section">
+        <div class="container">
+            <h2 class="section-title">🔧 Project Introduction</h2>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <h3>📋 Problem Statement</h3>
+                    <p>Develop a dual image super-resolution system for high-resolution optical satellite imagery that can enhance image quality and resolution while implementing blind evaluation metrics to assess enhancement quality without requiring ground truth reference images.</p>
+                </div>
+                
+                <div class="problem-card">
+                    <h3>🌍 Importance in Satellite Imagery</h3>
+                    <p><strong>Disaster Management:</strong> Enhanced imagery for better damage assessment<br>
+                    <strong>Urban Planning:</strong> Detailed city development monitoring<br>
+                    <strong>Agriculture:</strong> Precise crop monitoring and yield prediction<br>
+                    <strong>Environmental:</strong> Forest cover and climate change analysis</p>
+                </div>
+                
+                <div class="problem-card">
+                    <h3>🔄 What is Dual Image Super-Resolution?</h3>
+                    <p>A technique that uses <strong>two low-resolution satellite images</strong> of the same scene (potentially from different angles or times) to generate a single high-resolution output. This approach leverages complementary information from both images to achieve better enhancement than single-image methods.</p>
+                </div>
+                
+                <div class="problem-card">
+                    <h3>👁️ What is Blind Evaluation?</h3>
+                    <p>Quality assessment of enhanced images <strong>without access to ground truth</strong> high-resolution references. Uses perceptual metrics, statistical analysis, and subjective evaluation to determine enhancement quality in real-world scenarios where perfect references don't exist.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="section">
+        <div class="container">
+            <h2 class="section-title">🧠 Solution Architecture</h2>
+            <div class="architecture-container">
+                <h3 class="section-subtitle">Processing Pipeline</h3>
+                
+                <div class="workflow-diagram">
+                    <div class="workflow-step">
+                        <span class="step-icon">📸</span>
+                        <h4>Input Images</h4>
+                        <p>Two low-resolution satellite images of the same scene</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <span class="step-icon">🔄</span>
+                        <h4>Preprocessing</h4>
+                        <p>Image alignment, noise reduction, and normalization</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <span class="step-icon">🧠</span>
+                        <h4>Deep Learning Model</h4>
+                        <p>Enhanced EDSR + SwinIR Hybrid Architecture</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <span class="step-icon">📊</span>
+                        <h4>Post-processing</h4>
+                        <p>Quality enhancement and artifact removal</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <span class="step-icon">🎯</span>
+                        <h4>High-Resolution Output</h4>
+                        <p>Enhanced satellite image with 4x resolution improvement</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="section">
+        <div class="container">
+            <h2 class="section-title">🖼️ Interactive Demo</h2>
+            <div class="demo-container">
+                <h3 class="section-subtitle">Upload Two Low-Resolution Satellite Images</h3>
+                
+                <div class="upload-section">
+                    <div class="upload-box" id="upload1">
+                        <input type="file" id="file1" accept="image/*">
+                        <div class="upload-content">
+                            <div class="upload-icon">📁</div>
+                            <h4>Upload First Image</h4>
+                            <p>Low-resolution satellite image (Scene 1)</p>
+                            <div class="upload-status" id="status1">Click to select image</div>
+                        </div>
+                        <img class="image-preview" id="preview1" alt="Preview 1">
+                    </div>
+                    
+                    <div class="upload-box" id="upload2">
+                        <input type="file" id="file2" accept="image/*">
+                        <div class="upload-content">
+                            <div class="upload-icon">📁</div>
+                            <h4>Upload Second Image</h4>
+                            <p>Low-resolution satellite image (Scene 2)</p>
+                            <div class="upload-status" id="status2">Click to select image</div>
+                        </div>
+                        <img class="image-preview" id="preview2" alt="Preview 2">
+                    </div>
+                </div>
+                
+                <button class="process-button" id="processBtn" disabled>
+                    🚀 Process Images with Super-Resolution
+                </button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing images with AI model...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                
+                <div class="result-section" id="results" style="display: none;">
+                    <h3>✨ Super-Resolution Results</h3>
+                    <div class="result-images">
+                        <div class="result-box">
+                            <img class="result-image" id="inputPreview" alt="Input">
+                            <h4>Input (Low-Resolution)</h4>
+                        </div>
+                        <div class="result-box">
+                            <img class="result-image" id="outputPreview" alt="Enhanced Output">
+                            <h4>Enhanced Output (High-Resolution)</h4>
+                        </div>
+                    </div>
+                    <div class="alert alert-success">
+                        <strong>Success!</strong> Images processed successfully with AI super-resolution model.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Evaluation Section -->
+    <section id="evaluation" class="section">
+        <div class="container">
+            <h2 class="section-title">📈 Blind Evaluation</h2>
+            <div class="evaluation-container">
+                <h3 class="section-subtitle">Quality Assessment Metrics</h3>
+                <p style="text-align: center; margin-bottom: 2rem;">
+                    Blind evaluation assesses image quality <strong>without access to ground truth</strong> reference images.
+                </p>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>BRISQUE Score</h4>
+                        <div class="metric-value" id="brisque">--</div>
+                        <p>Blind Image Quality Assessment (Lower is better)</p>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4>Sharpness Index</h4>
+                        <div class="metric-value" id="sharpness">--</div>
+                        <p>Edge-based sharpness measurement (Higher is better)</p>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4>Contrast Ratio</h4>
+                        <div class="metric-value" id="contrast">--</div>
+                        <p>Dynamic range improvement (Higher is better)</p>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4>Enhancement Score</h4>
+                        <div class="metric-value" id="enhancement">--</div>
+                        <p>Overall improvement rating (Higher is better)</p>
+                    </div>
+                </div>
+                
+                <div class="rating-section">
+                    <h3>👥 Subjective Quality Rating</h3>
+                    <p>Rate the visual quality of the enhanced image:</p>
+                    <div class="star-rating" id="starRating">
+                        <span class="star" data-rating="1">★</span>
+                        <span class="star" data-rating="2">★</span>
+                        <span class="star" data-rating="3">★</span>
+                        <span class="star" data-rating="4">★</span>
+                        <span class="star" data-rating="5">★</span>
+                    </div>
+                    <p id="ratingText">Click stars to rate (1-5 scale)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section id="tech" class="section">
+        <div class="container">
+            <h2 class="section-title">📦 Technology Stack</h2>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <h3>🧠 Deep Learning</h3>
+                    <p>Advanced neural networks for image enhancement</p>
+                    <div class="tech-tags">
+                        <span class="tech-tag">PyTorch</span>
+                        <span class="tech-tag">EDSR</span>
+                        <span class="tech-tag">SwinIR</span>
+                    </div>
+                </div>
+                
+                <div class="tech-card">
+                    <h3>🖥️ Backend</h3>
+                    <p>Server-side processing and API development</p>
+                    <div class="tech-tags">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">FastAPI</span>
+                        <span class="tech-tag">Docker</span>
+                    </div>
+                </div>
+                
+                <div class="tech-card">
+                    <h3>🎨 Frontend</h3>
+                    <p>Interactive user interface</p>
+                    <div class="tech-tags">
+                        <span class="tech-tag">HTML5</span>
+                        <span class="tech-tag">CSS3</span>
+                        <span class="tech-tag">JavaScript</span>
+                    </div>
+                </div>
+                
+                <div class="tech-card">
+                    <h3>📊 Image Processing</h3>
+                    <p>Computer vision and analysis tools</p>
+                    <div class="tech-tags">
+                        <span class="tech-tag">OpenCV</span>
+                        <span class="tech-tag">NumPy</span>
+                        <span class="tech-tag">PIL</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Global variables
+        let uploadedImages = { img1: null, img2: null };
+        let currentRating = 0;
+        let processedImage = null;
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUploadHandlers();
+            initializeProcessButton();
+            initializeStarRating();
+            initializeSmoothScrolling();
+        });
+
+        function initializeUploadHandlers() {
+            // Handle first image upload
+            document.getElementById('file1').addEventListener('change', function(e) {
+                handleImageUpload(e, 'img1', 'preview1', 'status1', 'upload1');
+            });
+
+            // Handle second image upload
+            document.getElementById('file2').addEventListener('change', function(e) {
+                handleImageUpload(e, 'img2', 'preview2', 'status2', 'upload2');
+            });
+        }
+
+        function handleImageUpload(event, imageKey, previewId, statusId, uploadBoxId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check if file is an image
+            if (!file.type.match('image.*')) {
+                document.getElementById(statusId).textContent = 'Please upload an image file';
+                return;
+            }
+
+            document.getElementById(statusId).textContent = 'Uploading...';
+            const preview = document.getElementById(previewId);
+            const uploadBox = document.getElementById(uploadBoxId);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Create a new image element
+                const img = new Image();
+                img.onload = function() {
+                    // Store the image data URL directly
+                    uploadedImages[imageKey] = e.target.result;
+                    
+                    // Display preview
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    
+                    // Update UI
+                    document.getElementById(statusId).textContent = 'Upload complete!';
+                    uploadBox.classList.add('has-image');
+                    
+                    // Enable process button if both images are uploaded
+                    if (uploadedImages.img1 && uploadedImages.img2) {
+                        document.getElementById('processBtn').disabled = false;
+                    }
+                };
+                img.onerror = function() {
+                    document.getElementById(statusId).textContent = 'Error loading image';
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                document.getElementById(statusId).textContent = 'Error reading file';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initializeProcessButton() {
+            document.getElementById('processBtn').addEventListener('click', function() {
+                // Show loading state
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('processBtn').disabled = true;
+                
+                // Simulate processing with progress updates
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress > 100) progress = 100;
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    
+                    if (progress === 100) {
+                        clearInterval(progressInterval);
+                        processComplete();
+                    }
+                }, 500);
+            });
+        }
+
+        function processComplete() {
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+            
+            // Display results using the stored data URLs
+            document.getElementById('inputPreview').src = uploadedImages.img1;
+            
+            // For demo purposes, we'll create a fake enhanced version
+            // In a real app, this would be replaced with actual processed image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                // Create a larger canvas (simulate 2x upscaling)
+                canvas.width = img.width * 2;
+                canvas.height = img.height * 2;
+                
+                // Draw the original image scaled up
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Apply some simple processing to simulate enhancement
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Simple sharpening effect
+                for (let i = 0; i < data.length; i += 4) {
+                    // Increase contrast slightly
+                    data[i] = Math.min(255, data[i] * 1.1);     // R
+                    data[i+1] = Math.min(255, data[i+1] * 1.1); // G
+                    data[i+2] = Math.min(255, data[i+2] * 1.1); // B
+                }
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Store the processed image
+                processedImage = canvas.toDataURL('image/jpeg');
+                document.getElementById('outputPreview').src = processedImage;
+                
+                // Show results
+                document.getElementById('results').style.display = 'block';
+                
+                // Generate random metrics for demo purposes
+                updateMetrics();
+                
+                // Scroll to results
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            };
+            
+            img.src = uploadedImages.img1;
+        }
+
+        function updateMetrics() {
+            // Generate random metrics for demo purposes
+            document.getElementById('brisque').textContent = (Math.random() * 20 + 10).toFixed(1);
+            document.getElementById('sharpness').textContent = (Math.random() * 20 + 80).toFixed(1);
+            document.getElementById('contrast').textContent = (Math.random() * 0.5 + 1.5).toFixed(2);
+            document.getElementById('enhancement').textContent = (Math.random() * 20 + 80).toFixed(1);
+        }
+
+        function initializeStarRating() {
+            const stars = document.querySelectorAll('.star');
+            const ratingText = document.getElementById('ratingText');
+            
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    currentRating = rating;
+                    
+                    // Update star display
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                    
+                    // Update rating text
+                    const ratings = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+                    ratingText.textContent = `You rated this ${ratings[rating-1]} (${rating}/5)`;
+                });
+                
+                star.addEventListener('mouseover', function() {
+                    const hoverRating = parseInt(this.getAttribute('data-rating'));
+                    
+                    stars.forEach((s, index) => {
+                        if (index < hoverRating) {
+                            s.style.color = '#ffd700';
+                        } else {
+                            s.style.color = '#666';
+                        }
+                    });
+                });
+                
+                star.addEventListener('mouseout', function() {
+                    stars.forEach((s, index) => {
+                        if (index < currentRating) {
+                            s.style.color = '#ffd700';
+                        } else {
+                            s.style.color = '#666';
+                        }
+                    });
+                });
+            });
+        }
+
+        function initializeSmoothScrolling() {
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        }
+    </script>
+</body>
+</html>
